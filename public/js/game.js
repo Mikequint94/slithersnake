@@ -1,6 +1,6 @@
-var config = {
+const config = {
     type: Phaser.AUTO,
-    parent: 'phaser-example',
+    parent: 'slither-io',
     width: 800,
     height: 600,
     scene: {
@@ -10,91 +10,90 @@ var config = {
     }
   };
    
-  var game = new Phaser.Game(config);
-  let snake;
+  const game = new Phaser.Game(config);
+  let mySnake;
+  console.log('whoo')
+
+  var Snake = new Phaser.Class({
+    initialize:
+    function Snake (scene, x, y, length, color)
+    {
+        this.headPosition = new Phaser.Geom.Point(x, y);
+        this.body = scene.add.group();
+        this.head = this.body.create(x, y, 'circle');
+        this.color=color;
+        console.log(x, y)
+        this.head.setOrigin(0.5, 0.5).setDisplaySize(53, 40).setTint(this.color);
+        this.speed = 100;
+        this.length = length;
+        this.growth = length;
+        this.tail = new Phaser.Geom.Point(x, y);
+    },
+
+    move: function (x, y)
+    {
+        this.headPosition.x = x;
+        this.headPosition.y = y;
+        //  Update the body segments and place the last coordinate into this.tail
+        Phaser.Actions.ShiftPosition(this.body.getChildren(), this.headPosition.x, this.headPosition.y, 1, this.tail);
+        return true;
+    },
+
+    grow: function ()
+    {
+        if (this.growth > 0) {
+            this.growth -= 1;
+            const newPart = this.body.create(this.tail.x, this.tail.y, 'circle');
+            newPart.setOrigin(0.5, 0.5).setDisplaySize(40, 40).setTint(this.color);
+        }
+
+    },
+    die: function () {
+        this.body.destroy(true);
+    }
+
+});
    
   function preload() {
-    this.load.image('ship', 'assets/eye-white.png');
-    this.load.image('circle','assets/circle.png');
-    this.load.image('shadow', 'assets/white-shadow.png');
-    this.load.image('background', 'assets/tile.png');
-
-    this.load.image('eye-white', 'assets/eye-white.png');
-    this.load.image('eye-black', 'assets/eye-black.png');
-
-    this.load.image('food', 'assets/hex.png');
+    this.load.image('circle', 'assets/eye-white.png');
   }
    
     function create() {
-        var self = this;
+        const self = this;
         this.socket = io();
-        this.players = this.add.group();
-
-        var Snake = new Phaser.Class({
-
-            initialize:
-    
-            function Snake (scene, x, y, color)
-            {
-                this.headPosition = new Phaser.Geom.Point(x, y);
-                this.body = scene.add.group();
-                this.head = this.body.create(x, y, 'ship');
-                this.color=color;
-                this.head.setOrigin(0.5, 0.5).setDisplaySize(53, 40).setTint(this.color);
-                this.speed = 100;
-                this.growth = 50;
-                this.tail = new Phaser.Geom.Point(x, y);
-            },
-    
-            move: function (x, y)
-            {
-                this.headPosition.x = x;
-                this.headPosition.y = y;
-                //  Update the body segments and place the last coordinate into this.tail
-                Phaser.Actions.ShiftPosition(this.body.getChildren(), this.headPosition.x, this.headPosition.y, 1, this.tail);
-                return true;
-            },
-    
-            grow: function ()
-            {
-                if (this.growth > 0) {
-                    this.growth -= 1;
-                    var newPart = this.body.create(this.tail.x, this.tail.y, 'ship');
-                    newPart.setOrigin(0.5, 0.5).setDisplaySize(40, 40).setTint(this.color);
-                }
-
-            },
-    
-        });
+        this.snakes = this.add.group();
         
-        this.socket.on('currentPlayers', function (players) {
-            console.log(players)
-            Object.keys(players).forEach(function (id) {
-                snake = new Snake(self, players[id].x, players[id].y, players[id].color);
-                console.log(snake)
-                displayPlayers(self, players[id], 'ship');
+        this.socket.on('currentSnakes', (snakes) => {
+            console.log('snakes: ', snakes)
+            Object.keys(snakes).forEach( (id) => {
+                displaySnakes(self, snakes[id]);
             });
-            console.log(self.players.children.entries)
         });
-        this.socket.on('newPlayer', function (playerInfo) {
-            displayPlayers(self, playerInfo, 'ship');
+        // this.socket.on('mySnake', (snake) => {
+        //     if (!mySnake) {
+        //         console.log('my snake: ', snake);
+        //         mySnake = new Snake(self, snake.x, snake.y, snake.length, snake.color);
+        //     }
+        // });
+        this.socket.on('newPlayer', (playerInfo) => {
+            displaySnakes(self, playerInfo);
           });
-        this.socket.on('disconnect', function (playerId) {
-            self.players.getChildren().forEach(function (player) {
-                if (playerId === player.playerId) {
-                    player.destroy();
+        this.socket.on('disconnect', (playerId) => {
+            self.snakes.getChildren().forEach( (snake) => {
+                if (playerId === snake.playerId) {
+                    snake.worm.die();
+                    snake.destroy();
                 }
             });
         });
-        this.socket.on('playerUpdates', function (players) {
-            Object.keys(players).forEach(function (id) {
-                self.players.getChildren().forEach(function (player) {
-                    if (players[id].playerId === player.playerId) {
-                        // player.setRotation(players[id].rotation);
+        this.socket.on('snakeUpdates', (snakes) => {
+            Object.keys(snakes).forEach( (id) => {
+                self.snakes.getChildren().forEach( (snake) => {
+                    if (snakes[id].playerId === snake.playerId) {
+                        // console.log(snakes[id])
                         // player.setPosition(players[id].x, players[id].y);
-                        if (snake) {
-                            snake.move(players[id].x, players[id].y);
-                        }
+                        snake.worm.move(snakes[id].x, snakes[id].y);
+                        snake.worm.grow();
                     }
                 });
             });
@@ -102,15 +101,14 @@ var config = {
     }
    
   function update() {
-      if (snake) {
-          snake.grow();
-      }
       this.socket.emit('playerInput', { x: this.input.mousePointer.x,  y: this.input.mousePointer.y });
   }
 
-  function displayPlayers(self, playerInfo, sprite) {
-    const player = self.add.sprite(playerInfo.x, playerInfo.y, sprite).setOrigin(0.5, 0.5).setDisplaySize(0, 0);
-    player.setTint(playerInfo.color);
-    player.playerId = playerInfo.playerId;
-    self.players.add(player);
+  displaySnakes = (self, playerInfo) => {
+    const snake = self.add.sprite(playerInfo.x, playerInfo.y, 'circle').setOrigin(0.5, 0.5).setDisplaySize(0, 0);
+    snake.setTint(playerInfo.color);
+    snake.playerId = playerInfo.playerId;
+    snake.color = playerInfo.color;
+    snake.worm = new Snake(self, playerInfo.x, playerInfo.y, playerInfo.length, playerInfo.color)
+    self.snakes.add(snake);
   }

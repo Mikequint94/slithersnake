@@ -19,11 +19,11 @@ const config = {
     autoFocus: false
   };
    
-  preload = () => {
-    this.load.image('circle', 'assets/circle.png');
+  function preload() {
+    this.load.image('circle', 'assets/eye-white.png');
   }
    
-  create = () => {
+  function create() {
     const self = this;
     this.snakes = this.physics.add.group();
     io.on('connection', (socket) => {
@@ -32,6 +32,7 @@ const config = {
         console.log(`${socket.id} disconnected`);
         removeSnake(self, socket.id);
         delete snakes[socket.id];
+        // console.log(snakes)
         // emit a message to all players to remove this player
         io.emit('disconnect', socket.id);
       });
@@ -39,73 +40,68 @@ const config = {
       socket.on('playerInput', (inputData) => {
         handlePlayerInput(self, socket.id, inputData);
       });
-      // create a new player and add it to our players object
-      players[socket.id] = {
+      // create a new snake and add it to our snakes object
+      snakes[socket.id] = {
         rotation: 0,
         x: Math.floor(Math.random() * 500) + 150,
         y: Math.floor(Math.random() * 300) + 150,
         playerId: socket.id,
         color: Math.random() * 0xffffff,
+        length: Math.random()*100 + 50,
         input: {
-          left: false,
-          right: false,
+          // left: false,
         }
       };
-      // add player to server
-      addPlayer(self, players[socket.id]);
-      // send the players object to the new player
-      socket.emit('currentPlayers', players);
+      // add snake to server
+      addSnake(self, snakes[socket.id]);
+      // send the snakes object to the new player
+      console.log('sending my snake')
+      socket.emit('mySnake', snakes[socket.id]);
+      socket.emit('currentSnakes', snakes);
       // update all other players of the new player
-      socket.broadcast.emit('newPlayer', players[socket.id]);
-      // this.input.on('pointermove', (pointer) => {
-      //   this.physics.moveToObject(self, pointer, 240);
-      // }, this);
+      socket.broadcast.emit('newPlayer', snakes[socket.id]);
+      // console.log(snakes)
     });
     
   }
    
   function update() {
-    this.players.getChildren().forEach((player) => {
-      const input = players[player.playerId].input;
+    this.snakes.getChildren().forEach((player) => {
+      const input = snakes[player.playerId].input;
   
-      var angle = (180*Math.atan2(input.x-players[player.playerId].x,input.y-players[player.playerId].y)/Math.PI);
-      if (angle > 0) {
-          angle = 180-angle;
+      let radians = Math.atan2(input.x-snakes[player.playerId].x,input.y-snakes[player.playerId].y);
+      if (radians > 0) {
+          radians = Math.PI-radians;
+      } else {
+          radians = -Math.PI-radians;
       }
-      else {
-          angle = -180-angle;
-      }
-      angle = (angle*0.01745)
-      // console.log(player)
-      var dif = players[player.playerId].rotation- angle;
-      // this.head.body.setZeroRotation();
+      const dif = snakes[player.playerId].rotation- radians;
       //decide whether rotating left or right will angle the head towards
-      if (dif < 0 && dif > -180*0.01745 || dif > 180*0.01745) {
-        player.rotation = players[player.playerId].rotation + 0.03; 
-      } else if (dif > 0 && dif < 180*0.01745 || dif < -180*0.01745) {
-        player.rotation = players[player.playerId].rotation - 0.03;
+      if (dif < 0 && dif > -Math.PI || dif > Math.PI) {
+        player.rotation = snakes[player.playerId].rotation + 0.03; 
+      } else if (dif > 0 && dif < Math.PI || dif < -Math.PI) {
+        player.rotation = snakes[player.playerId].rotation - 0.03;
       }
       
-      // console.log(player.rotation)
       this.physics.velocityFromRotation(player.rotation - Math.PI/2, 100, player.body.velocity);
 
-      players[player.playerId].x = player.x;
-      players[player.playerId].y = player.y;
-      players[player.playerId].rotation = player.rotation;
+      snakes[player.playerId].x = player.x;
+      snakes[player.playerId].y = player.y;
+      snakes[player.playerId].rotation = player.rotation;
     });
-    io.emit('playerUpdates', players);
+    io.emit('snakeUpdates', snakes);
   }
 
   handlePlayerInput =(self, playerId, input) => {
-    self.players.getChildren().forEach((player) => {
-      if (playerId === player.playerId) {
-        players[player.playerId].input = input;
+    self.snakes.getChildren().forEach((snake) => {
+      if (playerId === snake.playerId) {
+        snakes[snake.playerId].input = input;
       }
     });
   }
 
   addSnake = (self, playerInfo) => {
-    const snake = self.physics.add.image(playerInfo.x, playerInfo.y, 'circle').setOrigin(0.5, 0.5).setDisplaySize(53, 40);
+    const snake = self.physics.add.image(playerInfo.x, playerInfo.y, 'circle')
     snake.playerId = playerInfo.playerId;
     self.snakes.add(snake);
   }
