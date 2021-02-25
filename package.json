@@ -1,0 +1,22 @@
+{
+  "name": "slither-io",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "canvas": "^2.6.1",
+    "datauri": "1.1.0",
+    "express": "4.16.4",
+    "jsdom": "13.0.0",
+    "socket.io": "2.1.1"
+  }
+}
