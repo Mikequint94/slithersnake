@@ -1,4 +1,6 @@
 const snakes = {};
+const foods = {};
+let foodId = 0;
 
 const config = {
     type: Phaser.HEADLESS,
@@ -55,9 +57,10 @@ const config = {
       // add snake to server
       addSnake(self, snakes[socket.id]);
       // send the snakes object to the new player
-      console.log('sending my snake')
-      socket.emit('mySnake', snakes[socket.id]);
+      // console.log('sending my snake')
+      // socket.emit('mySnake', snakes[socket.id]);
       socket.emit('currentSnakes', snakes);
+      socket.emit('currentFoods', foods);
       // update all other players of the new player
       socket.broadcast.emit('newPlayer', snakes[socket.id]);
       // console.log(snakes)
@@ -90,6 +93,14 @@ const config = {
       snakes[player.playerId].rotation = player.rotation;
     });
     io.emit('snakeUpdates', snakes);
+
+    if (Math.random() < 0.003) {
+      let x = Phaser.Math.Between(30, 770);
+      let y = Phaser.Math.Between(30, 570);
+      foodId++;
+      foods[foodId] = {foodId, x, y};
+      io.emit('newFood', foods[foodId]);
+    }
   }
 
   handlePlayerInput =(self, playerId, input) => {
