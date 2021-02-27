@@ -14,7 +14,11 @@ app.use(express.static(__dirname + '/public'));
  
 app.get('/', function (req, res) {
     console.log(__dirname)
-  res.sendFile(__dirname + '/index.html');
+  if (req.headers['x-forwarded-proto'] != 'https' && process.env.NODE_ENV === 'production') {
+    res.redirect('https://'+req.hostname+req.url);
+  } else {
+    res.sendFile(__dirname + '/index.html');
+  }
 });
  
 function setupAuthoritativePhaser() {
