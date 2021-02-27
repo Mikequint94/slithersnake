@@ -7,7 +7,7 @@
     "lib": "lib"
   },
   "scripts": {
-    "start": "npm install && node index.js"
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
@@ -18,5 +18,8 @@
     "express": "4.16.4",
     "jsdom": "13.0.0",
     "socket.io": "2.1.1"
+  },
+  "engines": {
+    "node": "10.23.0"
   }
 }
