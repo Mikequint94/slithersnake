@@ -27,6 +27,8 @@ const config = {
    
   function create() {
     const self = this;
+    // maybe dont need group, only ever ONE snake per player server
+    // ^ could simplify shiz
     this.snakes = this.physics.add.group();
     io.on('connection', (socket) => {
       console.log(`${socket.id} connected`);
@@ -39,8 +41,14 @@ const config = {
         io.emit('disconnect', socket.id);
       });
       // when a player moves, update the player data
-      socket.on('playerInput', (inputData) => {
-        handlePlayerInput(self, socket.id, inputData);
+      socket.on('playerInput', (input) => {
+        snakes[socket.id].input = input;
+      });
+      socket.on('eatFood', (foodId, socketId, length) => {
+        delete foods[foodId];
+        console.log(snakes, socketId)
+        snakes[socketId].length = length;
+        console.log(foodId, foods)
       });
       // create a new snake and add it to our snakes object
       snakes[socket.id] = {
@@ -49,10 +57,8 @@ const config = {
         y: Math.floor(Math.random() * 300) + 150,
         playerId: socket.id,
         color: Math.random() * 0xffffff,
-        length: Math.random()*100 + 50,
-        input: {
-          // left: false,
-        }
+        length: 100,
+        input: {}
       };
       // add snake to server
       addSnake(self, snakes[socket.id]);
@@ -94,23 +100,15 @@ const config = {
     });
     io.emit('snakeUpdates', snakes);
 
-    if (Math.random() < 0.003) {
+    if (Math.random() < 0.003 && Object.keys(foods).length < 15) {
       let x = Phaser.Math.Between(30, 770);
       let y = Phaser.Math.Between(30, 570);
+      let size = Phaser.Math.Between(4, 20);
       foodId++;
-      foods[foodId] = {foodId, x, y};
+      foods[foodId] = {foodId, x, y, size};
       io.emit('newFood', foods[foodId]);
     }
   }
-
-  handlePlayerInput =(self, playerId, input) => {
-    self.snakes.getChildren().forEach((snake) => {
-      if (playerId === snake.playerId) {
-        snakes[snake.playerId].input = input;
-      }
-    });
-  }
-
   addSnake = (self, playerInfo) => {
     const snake = self.physics.add.image(playerInfo.x, playerInfo.y, 'circle')
     snake.playerId = playerInfo.playerId;

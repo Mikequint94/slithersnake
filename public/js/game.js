@@ -20,29 +20,32 @@ const config = {
 
   let Snake = new Phaser.Class({
     initialize:
-    function Snake (scene, x, y, length, color)
+    function Snake (scene, x, y, length, color, socketId)
     {
         this.headPosition = new Phaser.Geom.Point(x, y);
         this.body = scene.add.group();
         this.head = this.body.create(x, y, 'circle');
         this.color=color;
-        console.log(x, y)
         this.head.setOrigin(0.5, 0.5).setDisplaySize(40, 30).setTint(this.color);
         this.speed = 100;
         this.length = length;
-        this.growth = length;
+        this.grown = 0;
         this.tail = new Phaser.Geom.Point(x, y);
+        this.range = 10;
+        this.socketId = socketId;
     },
 
-    move: function (foods, x, y)
+    move: function (foods, x, y, socket)
     {
         this.headPosition.x = x;
         this.headPosition.y = y;
         foods.getChildren().forEach( (food) => {
-            if (Math.abs(food.x - x) < 1 && Math.abs(food.y - y < 1)) {
+            if (Math.abs(food.x - x) < this.range && Math.abs(food.y - y) < this.range) {
                 food.destroy();
-                console.log('yum')
-                this.growth += 10;
+                this.length += food.size;
+                console.log(this.length)
+                console.log(this)
+                socket.emit('eatFood', food.id, this.socketId, this.length);
             }
         });
         //  Update the body segments and place the last coordinate into this.tail
@@ -52,8 +55,8 @@ const config = {
 
     grow: function ()
     {
-        if (this.growth > 0) {
-            this.growth -= 1;
+        if (this.grown < this.length) {
+            this.grown += 1;
             const newPart = this.body.create(this.tail.x, this.tail.y, 'circle');
             newPart.setOrigin(0.5, 0.5).setDisplaySize(30, 30).setTint(this.color);
         }
@@ -62,38 +65,6 @@ const config = {
     die: function () {
         this.body.destroy(true);
     }
-
-});
-
-  let Food = new Phaser.Class({
-
-    Extends: Phaser.GameObjects.Image,
-
-    initialize:
-
-    function Food (scene, x, y)
-    {
-        Phaser.GameObjects.Image.call(this, scene)
-
-        this.setTexture('food');
-        this.setPosition(x, y);
-        this.setOrigin(0);
-
-        this.total = 0;
-
-        scene.children.add(this);
-    },
-
-    eat: function ()
-    {
-        this.total++;
-
-        var x = Phaser.Math.Between(100, 700);
-        var y = Phaser.Math.Between(100, 500);
-
-        this.setPosition(x, y);
-    }
-
 });
    
   function preload() {
@@ -144,15 +115,12 @@ const config = {
             Object.keys(snakes).forEach( (id) => {
                 self.snakes.getChildren().forEach( (snake) => {
                     if (snakes[id].playerId === snake.playerId) {
-                        // console.log(snakes[id])
-                        // player.setPosition(players[id].x, players[id].y);
-                        snake.worm.move(self.foods, snakes[id].x, snakes[id].y);
+                        snake.worm.move(self.foods, snakes[id].x, snakes[id].y, self.socket);
                         snake.worm.grow();
                     }
                 });
             });
         });        
-        self.physics.add.overlap(self.snakes, self.foods, eatFood, null, this);
     }
    
   function update() {
@@ -164,19 +132,15 @@ const config = {
     snake.setTint(playerInfo.color);
     snake.playerId = playerInfo.playerId;
     snake.color = playerInfo.color;
-    snake.worm = new Snake(self, playerInfo.x, playerInfo.y, playerInfo.length, playerInfo.color)
+    snake.worm = new Snake(self, playerInfo.x, playerInfo.y, playerInfo.length, playerInfo.color, playerInfo.playerId)
     self.snakes.add(snake);
   }
   displayFoods = (self, foodInfo) => {
-    const food = self.physics.add.sprite(foodInfo.x, foodInfo.y, 'food').setOrigin(0.5, 0.5).setDisplaySize(25, 25);
+    const food = self.physics.add.sprite(foodInfo.x, foodInfo.y, 'food').setOrigin(0.5, 0.5).setDisplaySize(foodInfo.size*2, foodInfo.size*2);
     food.setTint('0x0ffff');
     food.id = foodInfo.foodId;
     food.x = foodInfo.x;
     food.y = foodInfo.y;
-    // food.worm = new Food(self, x, y,);
-
+    food.size = foodInfo.size;
     self.foods.add(food);
-  }
-  eatFood = (snake, food) => {
-      console.log('yooo')
   }
