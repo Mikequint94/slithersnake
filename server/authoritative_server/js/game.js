@@ -57,7 +57,7 @@ const config = {
         y: Math.floor(Math.random() * 300) + 150,
         playerId: socket.id,
         color: Math.random() * 0xffffff,
-        length: 100,
+        length: 50,
         input: {}
       };
       // add snake to server
@@ -85,11 +85,12 @@ const config = {
           radians = -Math.PI-radians;
       }
       const dif = snakes[player.playerId].rotation- radians;
+      const turnRadius = 0.078*Math.exp(-.00168 * snakes[player.playerId].length);
       //decide whether rotating left or right will angle the head towards
       if (dif < 0 && dif > -Math.PI || dif > Math.PI) {
-        player.rotation = snakes[player.playerId].rotation + 0.03; 
+        player.rotation = snakes[player.playerId].rotation + turnRadius; 
       } else if (dif > 0 && dif < Math.PI || dif < -Math.PI) {
-        player.rotation = snakes[player.playerId].rotation - 0.03;
+        player.rotation = snakes[player.playerId].rotation - turnRadius;
       }
       
       this.physics.velocityFromRotation(player.rotation - Math.PI/2, 100, player.body.velocity);

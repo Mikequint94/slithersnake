@@ -26,12 +26,12 @@ const config = {
         this.body = scene.add.group();
         this.head = this.body.create(x, y, 'circle');
         this.color=color;
-        this.head.setOrigin(0.5, 0.5).setDisplaySize(40, 30).setTint(this.color);
+        this.head.setOrigin(0.5, 0.5).setDisplaySize((8 + length/15), 8 + length/15).setTint(this.color);
         this.speed = 100;
         this.length = length;
         this.grown = 0;
         this.tail = new Phaser.Geom.Point(x, y);
-        this.range = 10;
+        this.range = 7.5 + 0.025*this.length;
         this.socketId = socketId;
     },
 
@@ -43,8 +43,10 @@ const config = {
             if (Math.abs(food.x - x) < this.range && Math.abs(food.y - y) < this.range) {
                 food.destroy();
                 this.length += food.size;
-                console.log(this.length)
-                console.log(this)
+                this.range = 7.5 + 0.025*this.length;
+                this.body.getChildren().forEach( (part) => {
+                    part.setDisplaySize(8 + this.length/15, 8 + this.length/15);
+                });
                 socket.emit('eatFood', food.id, this.socketId, this.length);
             }
         });
@@ -58,7 +60,7 @@ const config = {
         if (this.grown < this.length) {
             this.grown += 1;
             const newPart = this.body.create(this.tail.x, this.tail.y, 'circle');
-            newPart.setOrigin(0.5, 0.5).setDisplaySize(30, 30).setTint(this.color);
+            newPart.setOrigin(0.5, 0.5).setDisplaySize(8 + this.length/15, 8 + this.length/15).setTint(this.color);
         }
 
     },
