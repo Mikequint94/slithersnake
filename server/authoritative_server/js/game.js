@@ -93,7 +93,7 @@ const config = {
         player.rotation = snakes[player.playerId].rotation - turnRadius;
       }
       
-      this.physics.velocityFromRotation(player.rotation - Math.PI/2, 100, player.body.velocity);
+      this.physics.velocityFromRotation(player.rotation - Math.PI/2, 80, player.body.velocity);
 
       snakes[player.playerId].x = player.x;
       snakes[player.playerId].y = player.y;
