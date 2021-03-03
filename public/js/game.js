@@ -24,17 +24,14 @@ const config = {
     {
         this.headPosition = new Phaser.Geom.Point(x, y);
         this.body = scene.add.group();
+        this.eyes = scene.add.group();
         this.head = this.body.create(x, y, 'circle');
         this.color=color;
         this.head.setOrigin(0.5, 0.5).setDisplaySize((8 + length/15), 8 + length/15).setTint(this.color).setDepth(2);
-        this.eyeWhite = this.body.create(x, y, 'circle');
-        this.eyeWhiteTwo = this.body.create(x, y, 'circle');
-        this.eyeWhite.setOrigin(1).setDisplaySize((8 + length/15) / 3.5, (8 + length/15) / 3.5).setDepth(3);
-        this.eyeWhiteTwo.setOrigin(0).setDisplaySize((8 + length/15) / 3.5, (8 + length/15) / 3.5).setDepth(3);
-        this.eyeBlack = this.body.create(x, y, 'eye');
-        this.eyeBlackTwo = this.body.create(x, y, 'eye');
-        this.eyeBlack.setOrigin(1).setDisplaySize((8 + length/15) / 5, (8 + length/15) / 5).setDepth(4);
-        this.eyeBlackTwo.setOrigin(0).setDisplaySize((8 + length/15) / 5, (8 + length/15) / 5).setDepth(4);
+        this.eyeWhite = this.eyes.create(x, y, 'eye');
+        this.eyeWhiteTwo = this.eyes.create(x, y, 'eye');
+        this.eyeWhite.setDisplaySize((8 + length/15) / 3.5, (8 + length/15) / 3.5).setDepth(3);
+        this.eyeWhiteTwo.setDisplaySize((8 + length/15) / 3.5, (8 + length/15) / 3.5).setDepth(3);
 
         this.speed = 100;
         this.length = length;
@@ -44,7 +41,7 @@ const config = {
         this.socketId = socketId;
     },
 
-    move: function (foods, x, y, rotation, socket)
+    move: function (foods, x, y, rotation, socket, input)
     {
         this.headPosition.x = x;
         this.headPosition.y = y;
@@ -54,25 +51,22 @@ const config = {
                 this.length += food.size;
                 this.range = 7.5 + 0.025*this.length;
                 this.body.getChildren().forEach( (part) => {
-                    if (part.depth < 3) {
-                        part.setDisplaySize(8 + this.length/15, 8 + this.length/15);
-                    } else if (part.depth === 3) {
-                        part.setDisplaySize((8 + this.length/15) / 3.5, (8 + this.length/15) / 3.5);
-                    } else if (part.depth === 4){
-                        part.setDisplaySize((8 + this.length/15) / 5, (8 + this.length/15) / 5);
-                    }
+                    part.setDisplaySize(8 + this.length/15, 8 + this.length/15);
                 });
+                this.eyeWhite.setDisplaySize((8 + this.length/15) / 3.5, (8 + this.length/15) / 3.5);
+                this.eyeWhiteTwo.setDisplaySize((8 + this.length/15) / 3.5, (8 + this.length/15) / 3.5);
                 socket.emit('eatFood', food.id, this.socketId, this.length);
             }
         });
-        this.eyeWhite.setOrigin(0.5 - Math.cos(rotation), 0.5- Math.sin(rotation))
-        this.eyeWhiteTwo.setOrigin(Math.cos(rotation) + 0.5, Math.sin(rotation) + 0.5)
-        this.eyeBlack.setOrigin(0.5 - Math.cos(rotation), 0.5- Math.sin(rotation))
-        this.eyeBlackTwo.setOrigin(Math.cos(rotation) + 0.5, Math.sin(rotation) + 0.5)
-        this.eyeBlack.x = this.eyeWhite.x;
-        this.eyeBlack.y = this.eyeWhite.y;
-        this.eyeBlackTwo.x = this.eyeWhiteTwo.x;
-        this.eyeBlackTwo.y = this.eyeWhiteTwo.y;
+        this.eyeWhite.x = x- (8 + this.length/15)/4*Math.cos(rotation);
+        this.eyeWhite.y = y- (8 + this.length/15)/4*Math.sin(rotation);
+        this.eyeWhiteTwo.x = x + (8 + this.length/15)/4*Math.cos(rotation);
+        this.eyeWhiteTwo.y = y + (8 + this.length/15)/4*Math.sin(rotation);
+        
+        let radians = Math.atan2(input.mousePointer.x - x,input.mousePointer.y - y);
+        radians = radians > 0 ? Math.PI-radians : -Math.PI-radians;
+        this.eyeWhite.setRotation(radians)
+        this.eyeWhiteTwo.setRotation(radians)
         //  Update the body segments and place the last coordinate into this.tail
         Phaser.Actions.ShiftPosition(this.body.getChildren(), this.headPosition.x, this.headPosition.y, 1, this.tail);
         return true;
@@ -95,7 +89,7 @@ const config = {
   function preload() {
     this.load.image('circle', 'assets/eye-white.png');
     this.load.image('head', 'assets/snakePart.png');
-    this.load.image('eye', 'assets/eye-black.png');
+    this.load.image('eye', 'assets/eye.png');
     this.load.image('food', 'assets/food.png');
   }
    
@@ -142,7 +136,7 @@ const config = {
             Object.keys(snakes).forEach( (id) => {
                 self.snakes.getChildren().forEach( (snake) => {
                     if (snakes[id].playerId === snake.playerId) {
-                        snake.worm.move(self.foods, snakes[id].x, snakes[id].y, snakes[id].rotation, self.socket);
+                        snake.worm.move(self.foods, snakes[id].x, snakes[id].y, snakes[id].rotation, self.socket, self.input);
                         snake.worm.grow();
                     }
                 });
