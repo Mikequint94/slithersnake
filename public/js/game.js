@@ -28,10 +28,10 @@ const config = {
         this.head = this.body.create(x, y, 'circle');
         this.color=color;
         this.head.setOrigin(0.5, 0.5).setDisplaySize((8 + length/15), 8 + length/15).setTint(this.color).setDepth(2);
-        this.eyeWhite = this.eyes.create(x, y, 'eye');
-        this.eyeWhiteTwo = this.eyes.create(x, y, 'eye');
-        this.eyeWhite.setDisplaySize((8 + length/15) / 3.5, (8 + length/15) / 3.5).setDepth(3);
-        this.eyeWhiteTwo.setDisplaySize((8 + length/15) / 3.5, (8 + length/15) / 3.5).setDepth(3);
+        this.eye = this.eyes.create(x, y, 'eye');
+        this.eyeTwo = this.eyes.create(x, y, 'eye');
+        this.eye.setDisplaySize((8 + length/15) / 3.5, (8 + length/15) / 3.5).setDepth(3);
+        this.eyeTwo.setDisplaySize((8 + length/15) / 3.5, (8 + length/15) / 3.5).setDepth(3);
 
         this.speed = 100;
         this.length = length;
@@ -41,7 +41,7 @@ const config = {
         this.socketId = socketId;
     },
 
-    move: function (foods, x, y, rotation, socket, input)
+    move: function (foods, x, y, radians, rotation, socket)
     {
         this.headPosition.x = x;
         this.headPosition.y = y;
@@ -53,20 +53,17 @@ const config = {
                 this.body.getChildren().forEach( (part) => {
                     part.setDisplaySize(8 + this.length/15, 8 + this.length/15);
                 });
-                this.eyeWhite.setDisplaySize((8 + this.length/15) / 3.5, (8 + this.length/15) / 3.5);
-                this.eyeWhiteTwo.setDisplaySize((8 + this.length/15) / 3.5, (8 + this.length/15) / 3.5);
+                this.eye.setDisplaySize((8 + this.length/15) / 3.5, (8 + this.length/15) / 3.5);
+                this.eyeTwo.setDisplaySize((8 + this.length/15) / 3.5, (8 + this.length/15) / 3.5);
                 socket.emit('eatFood', food.id, this.socketId, this.length);
             }
         });
-        this.eyeWhite.x = x- (8 + this.length/15)/4*Math.cos(rotation);
-        this.eyeWhite.y = y- (8 + this.length/15)/4*Math.sin(rotation);
-        this.eyeWhiteTwo.x = x + (8 + this.length/15)/4*Math.cos(rotation);
-        this.eyeWhiteTwo.y = y + (8 + this.length/15)/4*Math.sin(rotation);
-        
-        let radians = Math.atan2(input.mousePointer.x - x,input.mousePointer.y - y);
-        radians = radians > 0 ? Math.PI-radians : -Math.PI-radians;
-        this.eyeWhite.setRotation(radians)
-        this.eyeWhiteTwo.setRotation(radians)
+        this.eye.x = x- (8 + this.length/15)/4*Math.cos(rotation);
+        this.eye.y = y- (8 + this.length/15)/4*Math.sin(rotation);
+        this.eyeTwo.x = x + (8 + this.length/15)/4*Math.cos(rotation);
+        this.eyeTwo.y = y + (8 + this.length/15)/4*Math.sin(rotation);
+        this.eye.setRotation(radians)
+        this.eyeTwo.setRotation(radians)
         //  Update the body segments and place the last coordinate into this.tail
         Phaser.Actions.ShiftPosition(this.body.getChildren(), this.headPosition.x, this.headPosition.y, 1, this.tail);
         return true;
@@ -83,6 +80,7 @@ const config = {
     },
     die: function () {
         this.body.destroy(true);
+        this.eyes.destroy(true);
     }
 });
    
@@ -111,12 +109,6 @@ const config = {
                 displayFoods(self, foods[id]);
             });
         });
-        // this.socket.on('mySnake', (snake) => {
-        //     if (!mySnake) {
-        //         console.log('my snake: ', snake);
-        //         mySnake = new Snake(self, snake.x, snake.y, snake.length, snake.color);
-        //     }
-        // });
         this.socket.on('newFood', (foodInfo) => {
             console.log('new food');
             displayFoods(self, foodInfo);
@@ -136,7 +128,7 @@ const config = {
             Object.keys(snakes).forEach( (id) => {
                 self.snakes.getChildren().forEach( (snake) => {
                     if (snakes[id].playerId === snake.playerId) {
-                        snake.worm.move(self.foods, snakes[id].x, snakes[id].y, snakes[id].rotation, self.socket, self.input);
+                        snake.worm.move(self.foods, snakes[id].x, snakes[id].y, snakes[id].radians, snakes[id].rotation, self.socket);
                         snake.worm.grow();
                     }
                 });

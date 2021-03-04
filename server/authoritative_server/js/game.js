@@ -53,11 +53,12 @@ const config = {
       // create a new snake and add it to our snakes object
       snakes[socket.id] = {
         rotation: 0,
+        radians: 0,
         x: Math.floor(Math.random() * 500) + 150,
         y: Math.floor(Math.random() * 300) + 150,
         playerId: socket.id,
         color: Math.random() * 0xffffff,
-        length: 50,
+        length: 60,
         input: {}
       };
       // add snake to server
@@ -92,12 +93,13 @@ const config = {
       } else if (dif > 0 && dif < Math.PI || dif < -Math.PI) {
         player.rotation = snakes[player.playerId].rotation - turnRadius;
       }
-      
+
       this.physics.velocityFromRotation(player.rotation - Math.PI/2, 80, player.body.velocity);
 
       snakes[player.playerId].x = player.x;
       snakes[player.playerId].y = player.y;
       snakes[player.playerId].rotation = player.rotation;
+      snakes[player.playerId].radians = radians;
     });
     io.emit('snakeUpdates', snakes);
 
