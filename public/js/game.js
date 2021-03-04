@@ -41,7 +41,7 @@ const config = {
         this.socketId = socketId;
     },
 
-    move: function (foods, x, y, radians, rotation, socket)
+    move: function (foods, x, y, radians, rotation, socket, lengthDisplay)
     {
         this.headPosition.x = x;
         this.headPosition.y = y;
@@ -56,6 +56,7 @@ const config = {
                 this.eye.setDisplaySize((8 + this.length/15) / 3.5, (8 + this.length/15) / 3.5);
                 this.eyeTwo.setDisplaySize((8 + this.length/15) / 3.5, (8 + this.length/15) / 3.5);
                 socket.emit('eatFood', food.id, this.socketId, this.length);
+                lengthDisplay.setText(`Length: ${this.length}`);
             }
         });
         this.eye.x = x- (8 + this.length/15)/4*Math.cos(rotation);
@@ -96,6 +97,7 @@ const config = {
         this.socket = io();
         this.snakes = this.physics.add.group();
         this.foods = this.physics.add.group();
+        this.lengthDisplay = this.add.text(650, 20, 'Length: 60');
         
         this.socket.on('currentSnakes', (snakes) => {
             console.log('snakes: ', snakes)
@@ -128,7 +130,7 @@ const config = {
             Object.keys(snakes).forEach( (id) => {
                 self.snakes.getChildren().forEach( (snake) => {
                     if (snakes[id].playerId === snake.playerId) {
-                        snake.worm.move(self.foods, snakes[id].x, snakes[id].y, snakes[id].radians, snakes[id].rotation, self.socket);
+                        snake.worm.move(self.foods, snakes[id].x, snakes[id].y, snakes[id].radians, snakes[id].rotation, self.socket, self.lengthDisplay);
                         snake.worm.grow();
                     }
                 });
