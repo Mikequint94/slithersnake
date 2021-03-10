@@ -247,7 +247,7 @@ const config = {
                         }
                         snake.worm.move(self.foods, snakes[id].x, snakes[id].y, snakes[id].radians, snakes[id].rotation);
                         snake.worm.grow();
-                        if (snake.worm.isMe) {
+                        if (snake.worm.isMe && self.living) {
                             snake.worm.zoom(self.input.mousePointer.isDown);
                         }
                     }
