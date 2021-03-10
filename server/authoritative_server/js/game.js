@@ -36,7 +36,6 @@ const config = {
         console.log(`${socket.id} disconnected`);
         removeSnake(self, socket.id);
         delete snakes[socket.id];
-        // console.log(snakes)
         // emit a message to all players to remove this player
         io.emit('disconnect', socket.id);
       });
@@ -44,11 +43,39 @@ const config = {
       socket.on('playerInput', (input) => {
         snakes[socket.id].input = input;
       });
+      socket.on('zoomFood', (x, y) => {
+        foodId++;
+        foods[foodId] = {foodId, x, y, size: 4};
+        io.emit('newFood', foods[foodId]);
+      });
       socket.on('eatFood', (foodId, socketId, length) => {
         delete foods[foodId];
-        console.log(snakes, socketId)
+        // console.log(snakes, socketId)
         snakes[socketId].length = length;
-        console.log(foodId, foods)
+      });
+      socket.on('snakeDied', (socketId, snakeMeat) => {
+        removeSnake(self, socketId);
+        delete snakes[socketId];
+        // emit a message to all players to remove this player
+        io.emit('disconnect', socketId);
+        console.log(snakeMeat)
+        snakeMeat.forEach(meat => {
+          foodId++;
+          let x = Phaser.Math.Between(meat.x-5, meat.x+5);
+          let y = Phaser.Math.Between(meat.y-5, meat.y+5);
+          let size = Phaser.Math.Between(12, 18);
+          foods[foodId] = {foodId, x, y, size};
+          io.emit('newFood', foods[foodId]);
+        })
+      });
+      socket.on('zoomShrink', (socketId, length) => {
+        snakes[socketId].length = length;
+      });
+      socket.on('zoomStart', (socketId) => {
+        snakes[socketId].zooming = true;
+      });
+      socket.on('zoomStop', (socketId) => {
+        snakes[socketId].zooming = false;
       });
       // create a new snake and add it to our snakes object
       snakes[socket.id] = {
@@ -58,7 +85,8 @@ const config = {
         y: Math.floor(Math.random() * 300) + 150,
         playerId: socket.id,
         color: Math.random() * 0xffffff,
-        length: 60,
+        length: 100,
+        zooming: false,
         input: {}
       };
       // add snake to server
@@ -66,7 +94,7 @@ const config = {
       // send the snakes object to the new player
       // console.log('sending my snake')
       // socket.emit('mySnake', snakes[socket.id]);
-      socket.emit('currentSnakes', snakes);
+      socket.emit('currentSnakes', snakes, socket.id);
       socket.emit('currentFoods', foods);
       // update all other players of the new player
       socket.broadcast.emit('newPlayer', snakes[socket.id]);
@@ -78,7 +106,7 @@ const config = {
   function update() {
     this.snakes.getChildren().forEach((player) => {
       const input = snakes[player.playerId].input;
-  
+      const speed = input.zoom && snakes[player.playerId].length > 51 ? 120 : 70;
       let radians = Math.atan2(input.x-snakes[player.playerId].x,input.y-snakes[player.playerId].y);
       if (radians > 0) {
           radians = Math.PI-radians;
@@ -94,7 +122,7 @@ const config = {
         player.rotation = snakes[player.playerId].rotation - turnRadius;
       }
 
-      this.physics.velocityFromRotation(player.rotation - Math.PI/2, 80, player.body.velocity);
+      this.physics.velocityFromRotation(player.rotation - Math.PI/2, speed, player.body.velocity);
 
       snakes[player.playerId].x = player.x;
       snakes[player.playerId].y = player.y;
