@@ -85,7 +85,7 @@ const config = {
         y: Math.floor(Math.random() * 300) + 150,
         playerId: socket.id,
         color: Math.random() * 0xffffff,
-        length: 100,
+        length: 60,
         zooming: false,
         input: {}
       };
