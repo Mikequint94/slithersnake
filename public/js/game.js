@@ -28,7 +28,7 @@ const config = {
         this.eyes = scene.add.group();
         this.head = this.body.create(x, y, 'circle');
         this.color=color;
-        this.lengthDisplay = scene.lengthDisplay;
+        // this.scoreBoard = scene.scoreBoard;
         this.socket = scene.socket;
         this.head.setOrigin(0.5, 0.5).setDisplaySize((8 + length/15), 8 + length/15).setTint(this.color).setDepth(2);
         this.eye = this.eyes.create(x, y, 'eye');
@@ -121,9 +121,6 @@ const config = {
         });
         this.eye.setDisplaySize((8 + this.length/15) / 3.5, (8 + this.length/15) / 3.5);
         this.eyeTwo.setDisplaySize((8 + this.length/15) / 3.5, (8 + this.length/15) / 3.5);
-        if (this.isMe) {
-            this.lengthDisplay.setText(`Length: ${this.length}`);
-        }
     },
     updateInfo: function (length, zooming)
     {
@@ -158,7 +155,7 @@ const config = {
         this.socket = io();
         this.snakes = this.physics.add.group();
         this.foods = this.physics.add.group();
-        this.lengthDisplay = this.add.text(650, 20, 'Length: 60');
+        this.scoreBoard = this.add.text(520, 20, '',  {align: 'right'});
         self.detector = null;
         self.socketId = null;
         self.living = true;
@@ -223,14 +220,16 @@ const config = {
             displaySnakes(self, playerInfo, false);
             addCollisionDetectors();
         });
+        this.socket.on('scores', (snakes) => {
+            let sorted = Object.entries(snakes).sort((a,b) => a.length-b.length);
+            sorted = sorted.map(array => `${array[0]}: ${array[1].length}`);
+            this.scoreBoard.setText(sorted);
+        });
         this.socket.on('disconnect', (playerId) => {
             self.snakes.getChildren().forEach( (snake) => {
                 if (playerId === snake.playerId) {
                     snake.worm.die();
                     snake.destroy();
-                    // if (playerId === self.playerId) {
-                    //     self.living = false;
-                    // }
                 }
             });
             if (self.detector) {

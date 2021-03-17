@@ -1,6 +1,7 @@
 const snakes = {};
 const foods = {};
 let foodId = 0;
+let updateCount = 0;
 
 const config = {
     type: Phaser.HEADLESS,
@@ -96,6 +97,7 @@ const config = {
       // socket.emit('mySnake', snakes[socket.id]);
       socket.emit('currentSnakes', snakes, socket.id);
       socket.emit('currentFoods', foods);
+      io.emit('scores', snakes);
       // update all other players of the new player
       socket.broadcast.emit('newPlayer', snakes[socket.id]);
       // console.log(snakes)
@@ -104,6 +106,11 @@ const config = {
   }
    
   function update() {
+    updateCount++;
+    if (updateCount === 50) {
+      updateCount = 0;
+      io.emit('scores', snakes);
+    }
     this.snakes.getChildren().forEach((player) => {
       const input = snakes[player.playerId].input;
       const speed = input.zoom && snakes[player.playerId].length > 51 ? 120 : 70;
