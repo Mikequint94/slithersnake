@@ -28,8 +28,6 @@ const config = {
    
   function create() {
     const self = this;
-    // maybe dont need group, only ever ONE snake per player server
-    // ^ could simplify shiz
     this.snakes = this.physics.add.group();
     io.on('connection', (socket) => {
       console.log(`${socket.id} connected`);
@@ -59,7 +57,7 @@ const config = {
         delete snakes[socketId];
         // emit a message to all players to remove this player
         io.emit('disconnect', socketId);
-        console.log(snakeMeat)
+        // console.log(snakeMeat)
         snakeMeat.forEach(meat => {
           foodId++;
           let x = Phaser.Math.Between(meat.x-5, meat.x+5);
@@ -109,6 +107,14 @@ const config = {
     updateCount++;
     if (updateCount === 50) {
       updateCount = 0;
+      if (Math.random() < 0.3 && Object.keys(foods).length < 15) {
+        let x = Phaser.Math.Between(30, 770);
+        let y = Phaser.Math.Between(30, 570);
+        let size = Phaser.Math.Between(4, 20);
+        foodId++;
+        foods[foodId] = {foodId, x, y, size};
+        io.emit('newFood', foods[foodId]);
+      }
       io.emit('scores', snakes);
     }
     this.snakes.getChildren().forEach((player) => {
@@ -138,14 +144,6 @@ const config = {
     });
     io.emit('snakeUpdates', snakes);
 
-    if (Math.random() < 0.003 && Object.keys(foods).length < 15) {
-      let x = Phaser.Math.Between(30, 770);
-      let y = Phaser.Math.Between(30, 570);
-      let size = Phaser.Math.Between(4, 20);
-      foodId++;
-      foods[foodId] = {foodId, x, y, size};
-      io.emit('newFood', foods[foodId]);
-    }
   }
   addSnake = (self, playerInfo) => {
     const snake = self.physics.add.image(playerInfo.x, playerInfo.y, 'circle')

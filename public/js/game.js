@@ -53,8 +53,8 @@ const config = {
         foods.getChildren().forEach( (food) => {
             if (Math.abs(food.x - x) < this.range && Math.abs(food.y - y) < this.range) {
                 food.destroy();
-                this.socket.emit('eatFood', food.id, this.socketId, this.length);
                 this.changeSize(food.size);
+                this.socket.emit('eatFood', food.id, this.socketId, this.length);
             }
         });
         this.eye.x = x- (8 + this.length/15)/4*Math.cos(rotation);
@@ -82,7 +82,7 @@ const config = {
             const tail = this.body.getChildren()[this.body.children.entries.length - 1]
             tail.destroy();
             this.poopCount ++;
-            if (this.poopCount === 5) {
+            if (this.poopCount === 6) {
                 this.socket.emit('zoomFood', tail.x, tail.y);
                 this.poopCount = 0;
             }
@@ -221,7 +221,7 @@ const config = {
             addCollisionDetectors();
         });
         this.socket.on('scores', (snakes) => {
-            let sorted = Object.entries(snakes).sort((a,b) => a.length-b.length);
+            let sorted = Object.entries(snakes).sort((a,b) => b[1].length-a[1].length);
             sorted = sorted.map(array => `${array[0]}: ${array[1].length}`);
             this.scoreBoard.setText(sorted);
         });
